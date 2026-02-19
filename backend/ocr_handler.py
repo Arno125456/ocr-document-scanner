@@ -1,56 +1,101 @@
 from PIL import Image
 import numpy as np
+import io
+import os
 
 class OCRHandler:
     def __init__(self):
-        self.tesseract_available = False
+        self.vision_available = False
         try:
-            import pytesseract
-            self.pytesseract = pytesseract
-            self.tesseract_available = True
-            print("Tesseract found")
-        except:
-            print("Tesseract not available - OCR will use fallback")
-            self.tesseract_available = False
+            from google.cloud import vision
+            self.client = vision.ImageAnnotatorClient()
+            self.vision_available = True
+            print("✅ Google Cloud Vision initialized")
+        except Exception as e:
+            print(f"⚠️ Google Cloud Vision not available: {e}")
+            self.client = None
+            self.vision_available = False
 
     def extract_text_with_tesseract(self, image, lang='eng', return_regions=False):
-        """Extract text from image"""
+        """Extract text using Google Cloud Vision API"""
         import time
         start_time = time.time()
         
-        if not self.tesseract_available:
-            # Fallback: return image info only
-            if isinstance(image, np.ndarray):
-                h, w = image.shape[:2]
-                return f"Image {w}x{h} - Tesseract not available", {}, []
-            return "Tesseract not available", {}, []
-        
         try:
-            print(f"Starting OCR on image shape: {image.shape if isinstance(image, np.ndarray) else 'PIL'}, lang: {lang}")
+            print(f"🔍 Starting Google Cloud Vision OCR...")
             
-            # Convert to PIL Image
+            # Convert image to bytes
             if isinstance(image, np.ndarray):
                 pil_image = Image.fromarray(image)
             else:
                 pil_image = image
             
-            # Extract text - limit processing time
-            config = '--oem 3 --psm 6'
-            print("Running image_to_string...")
-            text = self.pytesseract.image_to_string(pil_image, lang=lang, config=config, timeout=30)
-            print(f"OCR completed in {time.time() - start_time:.2f}s, text length: {len(text)}")
+            img_byte_arr = io.BytesIO()
+            pil_image.save(img_byte_arr, format='PNG')
+            img_bytes = img_byte_arr.getvalue()
             
-            # Extract regions if requested (with timeout)
+            print(f"📊 Image size: {len(img_bytes)} bytes")
+            
+            # Create Vision image
+            from google.cloud import vision
+            vision_image = vision.Image(content=img_bytes)
+            
+            # Detect text
+            print("📝 Detecting text...")
+            text_response = self.client.text_detection(image=vision_image)
+            texts = text_response.text_annotations
+            
+            if texts:
+                full_text = texts[0].description
+                print(f"✅ OCR completed in {time.time() - start_time:.2f}s")
+                print(f"📄 Extracted {len(full_text)} characters")
+            else:
+                full_text = "No text detected"
+                print(f"⚠️ No text found in {time.time() - start_time:.2f}s")
+            
+            # Extract regions if requested
             regions = []
-            if return_regions:
-                print("Extracting text regions...")
-                data = self.pytesseract.image_to_data(pil_image, output_type=self.pytesseract.Output.DICT, config=config, lang=lang, timeout=30)
-                regions = self._extract_regions(data, image.shape if isinstance(image, np.ndarray) else (pil_image.height, pil_image.width))
-                print(f"Extracted {len(regions)} regions")
+            if return_regions and len(texts) > 1:
+                print("📍 Extracting text regions...")
+                for text_obj in texts[1:]:  # Skip first (full text)
+                    vertices = text_obj.bounding_poly.vertices
+                    if vertices:
+                        x_coords = [v.x for v in vertices]
+                        y_coords = [v.y for v in vertices]
+                        x = min(x_coords)
+                        y = min(y_coords)
+                        w = max(x_coords) - x
+                        h = max(y_coords) - y
+                        
+                        # Get image dimensions for percentage calculation
+                        img_width = pil_image.width
+                        img_height = pil_image.height
+                        
+                        regions.append({
+                            'text': text_obj.description,
+                            'confidence': 95,  # Google doesn't provide confidence for text detection
+                            'bbox': {
+                                'x': x,
+                                'y': y,
+                                'width': w,
+                                'height': h,
+                                'x_percent': (x / img_width) * 100 if img_width > 0 else 0,
+                                'y_percent': (y / img_height) * 100 if img_height > 0 else 0,
+                                'width_percent': (w / img_width) * 100 if img_width > 0 else 0,
+                                'height_percent': (h / img_height) * 100 if img_height > 0 else 0,
+                            }
+                        })
+                print(f"📍 Extracted {len(regions)} regions")
             
-            return text.strip() if text else "No text detected", {}, regions
+            # Clean up
+            text_response = None
+            
+            return full_text.strip() if full_text else "No text detected", {}, regions
+            
         except Exception as e:
-            print(f"OCR error after {time.time() - start_time:.2f}s: {e}")
+            print(f"❌ Google Cloud Vision error after {time.time() - start_time:.2f}s: {e}")
+            import traceback
+            traceback.print_exc()
             return f"OCR error: {str(e)}", {}, []
 
     def _extract_regions(self, ocr_data, image_shape):
@@ -81,7 +126,6 @@ class OCRHandler:
                     }
                 })
         
-        # Merge into lines
         return self._merge_to_lines(regions, img_w, img_h)
 
     def _merge_to_lines(self, regions, img_w, img_h):
@@ -109,7 +153,6 @@ class OCRHandler:
         if current_line:
             lines.append(current_line)
         
-        # Merge each line
         merged = []
         for line in lines:
             line_sorted = sorted(line, key=lambda r: r['bbox']['x'])

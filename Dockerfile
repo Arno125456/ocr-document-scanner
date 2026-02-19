@@ -2,12 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Tesseract OCR with English (included by default)
+# Install system dependencies (no Tesseract needed!)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr \
-    tesseract-ocr-eng \
-    tesseract-ocr-tha \
-    wget \
+    libgl1-mesa-glx \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first
@@ -22,9 +20,9 @@ COPY backend/ ./
 # Create temp directory
 RUN mkdir -p /app/temp
 
-# Set environment - use standard Debian path
+# Set environment
 ENV PYTHONPATH=/app
-ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/service-account-key.json
 
 EXPOSE 8000
 

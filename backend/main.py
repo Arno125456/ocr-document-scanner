@@ -16,6 +16,17 @@ import numpy as np
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Setup Google Cloud credentials
+try:
+    # Check if credentials file exists
+    if os.path.exists('/app/service-account-key.json'):
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/service-account-key.json'
+        logger.info("✅ Google Cloud credentials found")
+    else:
+        logger.warning("⚠️ Google Cloud credentials file not found")
+except Exception as e:
+    logger.error(f"Error setting up Google Cloud credentials: {e}")
+
 app = FastAPI(title="OCR Document Categorizer")
 
 # Add CORS middleware - allow all origins for production
