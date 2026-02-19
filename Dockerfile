@@ -2,17 +2,18 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Tesseract OCR with English and Thai languages
+# Install Tesseract OCR with English and wget for downloading Thai data
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-eng \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Download Thai language data manually (more reliable than apt)
+# Download Thai language data manually
 RUN mkdir -p /usr/share/tesseract-ocr/4.00/tessdata \
     && cd /usr/share/tesseract-ocr/4.00/tessdata \
-    && curl -L https://github.com/tesseract-ocr/tessdata/raw/main/tha.traineddata -o tha.traineddata \
-    && curl -L https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata -o eng.traineddata
+    && wget -q https://github.com/tesseract-ocr/tessdata/raw/main/tha.traineddata \
+    && wget -q https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
 
 # Copy requirements first
 COPY backend/requirements.txt .
