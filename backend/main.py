@@ -18,22 +18,32 @@ logger = logging.getLogger(__name__)
 
 # Setup Google Cloud credentials
 try:
-    # Check if credentials file exists
-    if os.path.exists('/app/service-account-key.json'):
+    # Try to get credentials from environment variable content
+    creds_content = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
+    
+    if creds_content:
+        logger.info("✅ Google Cloud credentials found in env var")
+        # Fix escaped newlines in private key
+        import json
+        try:
+            creds_dict = json.loads(creds_content)
+            # Fix the private key - replace literal \n with actual newlines
+            if 'private_key' in creds_dict:
+                creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
+            
+            # Write corrected credentials to file
+            with open('/app/service-account-key.json', 'w') as f:
+                json.dump(creds_dict, f, indent=2)
+            
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/service-account-key.json'
+            logger.info("✅ Credentials written and fixed")
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ Invalid JSON in credentials: {e}")
+    elif os.path.exists('/app/service-account-key.json'):
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/service-account-key.json'
         logger.info("✅ Google Cloud credentials found (file)")
     else:
-        # Try to get credentials from environment variable content
-        creds_content = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
-        if creds_content:
-            logger.info("✅ Google Cloud credentials found (env var)")
-            # Write to temp file for Google Cloud library
-            with open('/app/service-account-key.json', 'w') as f:
-                f.write(creds_content)
-            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/service-account-key.json'
-            logger.info("✅ Credentials written to file")
-        else:
-            logger.warning("⚠️ Google Cloud credentials not found - OCR will fail")
+        logger.warning("⚠️ Google Cloud credentials not found - OCR will fail")
 except Exception as e:
     logger.error(f"❌ Error setting up Google Cloud credentials: {e}")
 
