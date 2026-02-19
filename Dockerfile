@@ -2,18 +2,13 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install Tesseract OCR with English and wget for downloading Thai data
+# Install Tesseract OCR with English (included by default)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-eng \
+    tesseract-ocr-tha \
     wget \
     && rm -rf /var/lib/apt/lists/*
-
-# Download Thai language data manually
-RUN mkdir -p /usr/share/tesseract-ocr/4.00/tessdata \
-    && cd /usr/share/tesseract-ocr/4.00/tessdata \
-    && wget -q https://github.com/tesseract-ocr/tessdata/raw/main/tha.traineddata \
-    && wget -q https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
 
 # Copy requirements first
 COPY backend/requirements.txt .
@@ -27,9 +22,9 @@ COPY backend/ ./
 # Create temp directory
 RUN mkdir -p /app/temp
 
-# Set environment
+# Set environment - use standard Debian path
 ENV PYTHONPATH=/app
-ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
 
 EXPOSE 8000
 
