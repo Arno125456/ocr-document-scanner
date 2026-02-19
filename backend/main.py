@@ -21,11 +21,21 @@ try:
     # Check if credentials file exists
     if os.path.exists('/app/service-account-key.json'):
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/service-account-key.json'
-        logger.info("✅ Google Cloud credentials found")
+        logger.info("✅ Google Cloud credentials found (file)")
     else:
-        logger.warning("⚠️ Google Cloud credentials file not found")
+        # Try to get credentials from environment variable content
+        creds_content = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
+        if creds_content:
+            logger.info("✅ Google Cloud credentials found (env var)")
+            # Write to temp file for Google Cloud library
+            with open('/app/service-account-key.json', 'w') as f:
+                f.write(creds_content)
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/service-account-key.json'
+            logger.info("✅ Credentials written to file")
+        else:
+            logger.warning("⚠️ Google Cloud credentials not found - OCR will fail")
 except Exception as e:
-    logger.error(f"Error setting up Google Cloud credentials: {e}")
+    logger.error(f"❌ Error setting up Google Cloud credentials: {e}")
 
 app = FastAPI(title="OCR Document Categorizer")
 
