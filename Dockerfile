@@ -2,16 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies (no Tesseract needed!)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
-    libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy requirements first
 COPY backend/requirements.txt .
 
-# Install Python packages
+# Install Python packages (no system deps needed!)
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend code to root
