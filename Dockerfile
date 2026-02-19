@@ -1,18 +1,11 @@
-FROM tesseractshadow/tesseract4re
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install additional system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
-    libgomp1 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python packages
+# Copy requirements first
 COPY backend/requirements.txt .
+
+# Install Python packages only (no system deps)
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
@@ -23,7 +16,6 @@ RUN mkdir -p /app/temp
 
 # Set environment
 ENV PYTHONPATH=/app
-ENV TESSDATA_PREFIX=/usr/share/tessdata
 
 EXPOSE 8000
 
