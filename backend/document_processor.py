@@ -1,4 +1,3 @@
-import pytesseract
 from PIL import Image
 import numpy as np
 from ocr_handler import OCRHandler
