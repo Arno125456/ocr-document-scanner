@@ -13,10 +13,10 @@ import numpy as np
 
 app = FastAPI(title="OCR Document Categorizer")
 
-# Add CORS middleware - allow frontend on any port during development
+# Add CORS middleware - allow all origins for production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+    allow_origins=["*"],  # Allow all origins (safe for frontend-only app)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
