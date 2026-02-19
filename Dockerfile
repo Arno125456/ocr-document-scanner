@@ -1,14 +1,14 @@
-FROM python:3.11-slim
+FROM tesseractshadow/tesseract4re
 
 WORKDIR /app
 
-# Install Tesseract and OpenCV dependencies in one layer
+# Install additional system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr \
-    libtesseract-dev \
-    libleptonica-dev \
     libgl1-mesa-glx \
     libgomp1 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages
@@ -23,6 +23,7 @@ RUN mkdir -p /app/temp
 
 # Set environment
 ENV PYTHONPATH=/app
+ENV TESSDATA_PREFIX=/usr/share/tessdata
 
 EXPOSE 8000
 
