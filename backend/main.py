@@ -23,13 +23,20 @@ try:
     
     if creds_content:
         logger.info("✅ Google Cloud credentials found in env var")
-        # Fix escaped newlines in private key
         import json
         try:
             creds_dict = json.loads(creds_content)
-            # Fix the private key - replace literal \n with actual newlines
+            # Fix the private key - ensure proper newlines
             if 'private_key' in creds_dict:
-                creds_dict['private_key'] = creds_dict['private_key'].replace('\\n', '\n')
+                private_key = creds_dict['private_key']
+                # Replace escaped newlines with actual newlines
+                private_key = private_key.replace('\\n', '\n')
+                # Ensure it starts and ends correctly
+                if not private_key.startswith('-----BEGIN'):
+                    private_key = '-----BEGIN PRIVATE KEY-----\n' + private_key
+                if not private_key.endswith('-----END PRIVATE KEY-----\n'):
+                    private_key = private_key + '\n-----END PRIVATE KEY-----\n'
+                creds_dict['private_key'] = private_key
             
             # Write corrected credentials to file
             with open('/app/service-account-key.json', 'w') as f:
@@ -37,8 +44,16 @@ try:
             
             os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/service-account-key.json'
             logger.info("✅ Credentials written and fixed")
+            
+            # Test the credentials
+            from google.cloud import vision
+            test_client = vision.ImageAnnotatorClient()
+            logger.info("✅ Google Cloud Vision client initialized successfully!")
+            test_client = None  # Clean up
         except json.JSONDecodeError as e:
             logger.error(f"❌ Invalid JSON in credentials: {e}")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Vision API: {e}")
     elif os.path.exists('/app/service-account-key.json'):
         os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/app/service-account-key.json'
         logger.info("✅ Google Cloud credentials found (file)")
