@@ -15,6 +15,9 @@ class OCRHandler:
 
     def extract_text_with_tesseract(self, image, lang='eng', return_regions=False):
         """Extract text from image"""
+        import time
+        start_time = time.time()
+        
         if not self.tesseract_available:
             # Fallback: return image info only
             if isinstance(image, np.ndarray):
@@ -23,25 +26,31 @@ class OCRHandler:
             return "Tesseract not available", {}, []
         
         try:
+            print(f"Starting OCR on image shape: {image.shape if isinstance(image, np.ndarray) else 'PIL'}, lang: {lang}")
+            
             # Convert to PIL Image
             if isinstance(image, np.ndarray):
                 pil_image = Image.fromarray(image)
             else:
                 pil_image = image
             
-            # Extract text
+            # Extract text - limit processing time
             config = '--oem 3 --psm 6'
-            text = self.pytesseract.image_to_string(pil_image, lang=lang, config=config)
+            print("Running image_to_string...")
+            text = self.pytesseract.image_to_string(pil_image, lang=lang, config=config, timeout=30)
+            print(f"OCR completed in {time.time() - start_time:.2f}s, text length: {len(text)}")
             
-            # Extract regions if requested
+            # Extract regions if requested (with timeout)
             regions = []
             if return_regions:
-                data = self.pytesseract.image_to_data(pil_image, output_type=self.pytesseract.Output.DICT, config=config, lang=lang)
+                print("Extracting text regions...")
+                data = self.pytesseract.image_to_data(pil_image, output_type=self.pytesseract.Output.DICT, config=config, lang=lang, timeout=30)
                 regions = self._extract_regions(data, image.shape if isinstance(image, np.ndarray) else (pil_image.height, pil_image.width))
+                print(f"Extracted {len(regions)} regions")
             
-            return text.strip(), {}, regions
+            return text.strip() if text else "No text detected", {}, regions
         except Exception as e:
-            print(f"OCR error: {e}")
+            print(f"OCR error after {time.time() - start_time:.2f}s: {e}")
             return f"OCR error: {str(e)}", {}, []
 
     def _extract_regions(self, ocr_data, image_shape):
