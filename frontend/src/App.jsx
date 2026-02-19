@@ -500,20 +500,33 @@ const DocumentUpload = () => {
 
                 {/* Category Tabs */}
                 <div className="category-tabs">
-                  {Object.entries(result).map(([category, items]) =>
-                    category !== 'document_type' && 
-                    Array.isArray(items) && 
-                    items.length > 0 && (
-                      <button
-                        key={category}
-                        className={`category-tab ${activeCategory === category ? 'active' : ''} ${getCategoryColor(category)}`}
-                        onClick={() => setActiveCategory(activeCategory === category ? null : category)}
-                      >
-                        {getCategoryIcon(category)}
-                        <span className="tab-label">{category.charAt(0).toUpperCase() + category.slice(1)}</span>
-                        <span className="tab-count">{items.length}</span>
-                      </button>
+                  {Object.entries(result).filter(([category, items]) => 
+                    category !== 'document_type' && Array.isArray(items) && items.length > 0
+                  ).length > 0 ? (
+                    Object.entries(result).map(([category, items]) =>
+                      category !== 'document_type' &&
+                      Array.isArray(items) &&
+                      items.length > 0 && (
+                        <button
+                          key={category}
+                          className={`category-tab ${activeCategory === category ? 'active' : ''} ${getCategoryColor(category)}`}
+                          onClick={() => setActiveCategory(activeCategory === category ? null : category)}
+                        >
+                          {getCategoryIcon(category)}
+                          <span className="tab-label">{category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                          <span className="tab-count">{items.length}</span>
+                        </button>
+                      )
                     )
+                  ) : (
+                    <div className="no-categories">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v4M12 16h.01"/>
+                      </svg>
+                      <p>No text categories detected</p>
+                      <p className="hint">Try clicking on highlighted text in the image above</p>
+                    </div>
                   )}
                 </div>
 

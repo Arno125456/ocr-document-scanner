@@ -950,8 +950,31 @@ body {
   font-weight: 600;
 }
 
-.debug-info button:hover {
-  background: #475569;
+.no-categories {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.no-categories svg {
+  width: 64px;
+  height: 64px;
+  opacity: 0.5;
+}
+
+.no-categories p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.no-categories .hint {
+  font-size: 0.875rem;
+  color: #64748b;
 }
 
 /* No Regions Message */
