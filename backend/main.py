@@ -1,4 +1,3 @@
-import cv2
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -28,21 +27,16 @@ def convert_pdf_to_image(pdf_path):
     Convert the first page of a PDF to an image
     """
     doc = fitz.open(pdf_path)
-    page = doc.load_page(0)  # Load the first page
-    mat = fitz.Matrix(2.0, 2.0)  # Scale factor for better resolution
+    page = doc.load_page(0)
+    mat = fitz.Matrix(2.0, 2.0)
     pix = page.get_pixmap(matrix=mat)
-    
+
     # Convert to PIL Image
     img_data = pix.tobytes("ppm")
     img = Image.open(io.BytesIO(img_data))
-    
-    # Convert PIL image to OpenCV format
-    img_cv = np.array(img)
-    # Convert RGB to BGR (OpenCV uses BGR)
-    img_cv = cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR)
-    
+
     doc.close()
-    return img_cv
+    return img
 
 class CategorizedResult(BaseModel):
     title: list[str]
