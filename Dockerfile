@@ -5,7 +5,7 @@ WORKDIR /app
 # Copy requirements first
 COPY backend/requirements.txt .
 
-# Install Python packages only (no system deps)
+# Install Python packages only
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
