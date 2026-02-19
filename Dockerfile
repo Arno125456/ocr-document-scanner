@@ -1,9 +1,9 @@
-FROM python:3.11-slim
+FROM python:3.11-bookworm
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies including Tesseract OCR
+# Install Tesseract OCR and dependencies
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
     tesseract-ocr-eng \
@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     libsm6 \
     libxext6 \
     libxrender-dev \
-    && apt-get clean \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -27,12 +27,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend code
 COPY backend/ ./backend/
 
-# Create temp directory for uploads
+# Create temp directory
 RUN mkdir -p /app/temp
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr
 
 # Expose port
 EXPOSE 8000
