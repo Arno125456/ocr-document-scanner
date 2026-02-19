@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: ocr-document-scanner
+    env: docker
+    region: oregon
+    plan: free
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: TESSDATA_PREFIX
+        value: /usr/share/tesseract-ocr/4.00/tessdata
+    disk:
+      name: temp-storage
+      mountPath: /app/temp
+      sizeGB: 1
